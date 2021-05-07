@@ -1,0 +1,299 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Headerscanner</title>
+    <meta name="description" content="scanner">
+    <!-- CSS only -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
+    <!-- JavaScript Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js" integrity="sha384-b5kHyXgcpbZJO/tY9Ul7kGkf1S0CWuKcCD38l8YkeH8z8QjE0GmW1gYU5S9FOnJ0" crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <style>
+        .dropdown {
+            /*height: auto;   
+            max-height: 200px;
+            overflow-x: hidden;*/
+            }
+        #main {
+            /*border-radius: 25px;
+            border: 2px solid grey;
+            padding: 20px;
+            background-color: whitesmoke;
+            height: auto;*/
+        }
+        body{
+            /*background-color: rgb(173, 173, 173);*/
+        }
+    </style>
+  </head>
+  <body>
+    <header>
+        <div class="collapse bg-dark" id="navbarHeader">
+          <div class="container">
+            <div class="row">
+              <div class="col-sm-8 col-md-7 py-4">
+                <h4 class="text-white">About</h4>
+                <p class="text-muted">Scan HTTP Security headers. Code and algorithm by Ludwig Johnson and Lukas Mårtensson.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="navbar navbar-dark bg-dark shadow-sm">
+          <div class="container">
+            <a href="/" class="navbar-brand d-flex align-items-center">
+              <strong>HeaderScanner</strong>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarHeader" aria-controls="navbarHeader" aria-expanded="false" aria-label="Toggle navigation">
+              <span class="navbar-toggler-icon"></span>
+            </button>
+          </div>
+        </div>
+      </header>
+    
+        <main>
+      <div id="main" class="container" style="height: 100%;">
+        <h1>Assign weights</h1>
+        <p>Assign weights to the different tests to determine their importance for the overall score. The score has a maximum value of 100% but you can assign each test a weight from 0-100%. If a test is assigned a weight of 0%, it won't be included in the result and therefore show as a '-' on the result page. The weights will be normalized by the server to give a score out of 100%. You can also pick an existing weight-profile from the dropdown below. This is helpful if you want to test and compare multiple websites without having to enter the weights for each test. To save a new profile, simply assign the weights and check the checkbox below and assign a name for the weight-profile.</p>
+        <div class="dropdown">
+            <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+            Pick an existing weight-profile
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+                {% for profile in profile_list %}
+                    <li><a class="dropdown-item" href="/weight/{{ website_id }}?profile={{profile[0]}}">{{ profile[1] }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+        <br>
+        <form action="/result" method="POST">
+
+            <div class="accordion" id="accordionExample">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingOne">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                        X-XSS-Protection
+                        </button>
+                    </h2>
+                    <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <div class="mb-3">
+                                <label for="xss_filter_enabled" class="form-label">XSS filter enabled</label>
+                                <input name="xss_filter_enabled" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['xss_filter_enabled'] }}" id="xss_filter_enabled" oninput="xss_filter_enabled_amount.value=xss_filter_enabled.value">
+                                Weight: <output id="xss_filter_enabled_amount" name="xss_filter_enabled_amount" for="xss_filter_enabled">{{ profile_dict['xss_filter_enabled'] }}</output>%<br><br>
+                                <label for="xss_filter_block_mode" class="form-label">XSS filter blocking mode</label>
+                                <input name="xss_filter_block_mode" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['xss_filter_block_mode'] }}" id="xss_filter_block_mode" oninput="xss_filter_block_mode_amount.value=xss_filter_block_mode.value">
+                                Weight: <output id="xss_filter_block_mode_amount" name="xss_filter_block_mode_amount" for="xss_filter_block_mode">{{ profile_dict['xss_filter_block_mode'] }}</output>%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTwo">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                            Content Security Policy (CSP)
+                        </button>
+                    </h2>
+                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <div class="mb-3">
+                                <label for="csp_base_uri" class="form-label">base-uri directive</label>
+                                <input name="csp_base_uri" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['base-uri'] }}" id="csp_base_uri" oninput="csp_base_uri_amount.value=csp_base_uri.value">
+                                Weight: <output id="csp_base_uri_amount" name="csp_base_uri_amount" for="csp_base_uri">{{ profile_dict['base-uri'] }}</output>%<br><br>
+                                <label for="csp_form_action" class="form-label">form-action directive</label>
+                                <input name="csp_form_action" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['form-action'] }}" id="csp_form_action" oninput="csp_form_action_amount.value=csp_form_action.value">
+                                Weight: <output id="csp_form_action_amount" name="csp_form_action_amount" for="csp_form_action">{{ profile_dict['form-action'] }}</output>%<br><br>
+                                <label for="csp_frame_ancestors" class="form-label">frame-ancestors directive</label>
+                                <input name="csp_frame_ancestors" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['frame-ancestors'] }}" id="csp_frame_ancestors" oninput="csp_frame_ancestors_amount.value=csp_frame_ancestors.value">
+                                Weight: <output id="csp_frame_ancestors_amount" name="csp_frame_ancestors_amount" for="csp_frame_ancestors">{{ profile_dict['frame-ancestors'] }}</output>%<br><br>
+                                <label for="csp_report_to_report_uri" class="form-label">report-to/report-uri directive</label>
+                                <input name="csp_report_to_report_uri" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['report-to/uri'] }}" id="csp_report_to_report_uri" oninput="csp_report_to_report_uri_amount.value=csp_report_to_report_uri.value">
+                                Weight: <output id="csp_report_to_report_uri_amount" name="csp_report_to_report_uri_amount" for="csp_report_to_report_uri">{{ profile_dict['report-to/uri'] }}</output>%<br><br>
+                                <label for="csp_sandbox" class="form-label">sandbox directive</label>
+                                <input name="csp_sandbox" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['sandbox'] }}" id="csp_sandbox" oninput="csp_sandbox_amount.value=csp_sandbox.value">
+                                Weight: <output id="csp_sandbox_amount" name="csp_sandbox_amount" for="csp_sandbox">{{ profile_dict['sandbox'] }}</output>%<br><br>
+                                <label for="csp_upgrade_insecure_requests" class="form-label">upgrade-insecure-requests directive</label>
+                                <input name="csp_upgrade_insecure_requests" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['upgrade-insecure-requests'] }}" id="csp_upgrade_insecure_requests" oninput="csp_upgrade_insecure_requests_amount.value=csp_upgrade_insecure_requests.value">
+                                Weight: <output id="csp_upgrade_insecure_requests_amount" name="csp_upgrade_insecure_requests_amount" for="csp_upgrade_insecure_requests">{{ profile_dict['upgrade-insecure-requests'] }}</output>%<br><br>
+                                <label for="csp_child_src" class="form-label">child-src directive</label>
+                                <input name="csp_child_src" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['child-src'] }}" id="csp_child_src" oninput="csp_child_src_amount.value=csp_child_src.value">
+                                Weight: <output id="csp_child_src_amount" name="csp_child_src_amount" for="csp_child_src">{{ profile_dict['child-src'] }}</output>%<br><br>
+                                <label for="csp_connect_src" class="form-label">connect-src directive</label>
+                                <input name="csp_connect_src" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['connect-src'] }}" id="csp_connect_src" oninput="csp_connect_src_amount.value=csp_connect_src.value">
+                                Weight: <output id="csp_connect_src_amount" name="csp_connect_src_amount" for="csp_connect_src">{{ profile_dict['connect-src'] }}</output>%<br><br>
+                                <label for="csp_default_src" class="form-label">default-src directive</label>
+                                <input name="csp_default_src" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['default-src'] }}" id="csp_default_src" oninput="csp_default_src_amount.value=csp_default_src.value">
+                                Weight: <output id="csp_default_src_amount" name="csp_default_src_amount" for="csp_default_src">{{ profile_dict['default-src'] }}</output>%<br><br>
+                                <label for="csp_font_src" class="form-label">font-src directive</label>
+                                <input name="csp_font_src" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['font-src'] }}" id="csp_font_src" oninput="csp_font_src_amount.value=csp_font_src.value">
+                                Weight: <output id="csp_font_src_amount" name="csp_font_src_amount" for="csp_font_src">{{ profile_dict['font-src'] }}</output>%<br><br>
+                                <label for="csp_frame_src" class="form-label">frame-src directive</label>
+                                <input name="csp_frame_src" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['frame-src'] }}" id="csp_frame_src" oninput="csp_frame_src_amount.value=csp_frame_src.value">
+                                Weight: <output id="csp_frame_src_amount" name="csp_frame_src_amount" for="csp_frame_src">{{ profile_dict['frame-src'] }}</output>%<br><br>
+                                <label for="csp_img_src" class="form-label">img-src directive</label>
+                                <input name="csp_img_src" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['img-src'] }}" id="csp_img_src" oninput="csp_img_src_amount.value=csp_img_src.value">
+                                Weight: <output id="csp_img_src_amount" name="csp_img_src_amount" for="csp_img_src">{{ profile_dict['img-src'] }}</output>%<br><br>
+                                <label for="csp_manifest_src" class="form-label">manifest-src directive</label>
+                                <input name="csp_manifest_src" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['manifest-src'] }}" id="csp_manifest_src" oninput="csp_manifest_src_amount.value=csp_manifest_src.value">
+                                Weight: <output id="csp_manifest_src_amount" name="csp_manifest_src_amount" for="csp_manifest_src">{{ profile_dict['manifest-src'] }}</output>%<br><br>
+                                <label for="csp_media_src" class="form-label">media-src directive</label>
+                                <input name="csp_media_src" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['media-src'] }}" id="csp_media_src" oninput="csp_media_src_amount.value=csp_media_src.value">
+                                Weight: <output id="csp_media_src_amount" name="csp_media_src_amount" for="csp_media_src">{{ profile_dict['media-src'] }}</output>%<br><br>
+                                <label for="csp_object_src" class="form-label">object-src directive</label>
+                                <input name="csp_object_src" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['object-src'] }}" id="csp_object_src" oninput="csp_object_src_amount.value=csp_object_src.value">
+                                Weight: <output id="csp_object_src_amount" name="csp_object_src_amount" for="csp_object_src">{{ profile_dict['object-src'] }}</output>%<br><br>
+                                <label for="csp_script_src" class="form-label">script-src directive</label>
+                                <input name="csp_script_src" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['script-src'] }}" id="csp_script_src" oninput="csp_script_src_amount.value=csp_script_src.value">
+                                Weight: <output id="csp_script_src_amount" name="csp_script_src_amount" for="csp_script_src">{{ profile_dict['script-src'] }}</output>%<br><br>
+                                <label for="csp_style_src" class="form-label">style-src directive</label>
+                                <input name="csp_style_src" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['style-src'] }}" id="csp_style_src" oninput="csp_style_src_amount.value=csp_style_src.value">
+                                Weight: <output id="csp_style_src_amount" name="csp_style_src_amount" for="csp_style_src">{{ profile_dict['style-src'] }}</output>%<br><br>
+                                <label for="csp_worker_src" class="form-label">worker-src directive</label>
+                                <input name="csp_worker_src" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['worker-src'] }}" id="csp_worker_src" oninput="csp_worker_src_amount.value=csp_worker_src.value">
+                                Weight: <output id="csp_worker_src_amount" name="csp_worker_src_amount" for="csp_worker_src">{{ profile_dict['worker-src'] }}</output>%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingThree">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                        Subresource integrity
+                        </button>
+                    </h2>
+                    <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <div class="mb-3">
+                                <label for="sri" class="form-label">Subresource integrity checks for external javascript/stylesheets</label>
+                                <input name="sri" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['sri'] }}" id="sri" oninput="sri_amount.value=sri.value">
+                                Weight: <output id="sri_amount" name="sri_amount" for="sri">{{ profile_dict['sri'] }}</output>%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingFour">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                            HTTPS
+                        </button>
+                    </h2>
+                    <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <div class="mb-3">
+                                <label for="https_redirect" class="form-label">Does it redirect to https?</label>
+                                <input name="https_redirect" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['redirect_to_https'] }}" id="https_redirect" oninput="https_redirect_amount.value=https_redirect.value">
+                                Weight: <output id="https_redirect_amount" name="https_redirect_amount" for="https_redirect">{{ profile_dict['redirect_to_https'] }}</output>%<br><br>
+                                <label for="https_exists" class="form-label">Does HTTPS exist?</label>
+                                <input name="https_exists" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['https_exists'] }}" id="https_exists" oninput="https_exists_amount.value=https_exists.value">
+                                Weight: <output id="https_exists_amount" name="https_exists_amount" for="https_exists">{{ profile_dict['https_exists'] }}</output>%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingFive">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive" aria-expanded="false" aria-controls="collapseFive">
+                            Strict Transport Security (HSTS)
+                        </button>
+                    </h2>
+                    <div id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <div class="mb-3">
+                                <label for="HSTS_max_age" class="form-label">HSTS max-age directive</label>
+                                <input name="HSTS_max_age" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['max-age'] }}" id="HSTS_max_age" oninput="HSTS_max_age_amount.value=HSTS_max_age.value">
+                                Weight: <output id="HSTS_max_age_amount" name="HSTS_max_age_amount" for="HSTS_max_age">{{ profile_dict['max-age'] }}</output>%<br><br>
+                                <label for="HSTS_include_subdomains" class="form-label">HSTS include-subdomains directive</label>
+                                <input name="HSTS_include_subdomains" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['includesubdomains'] }}" id="HSTS_include_subdomains" oninput="HSTS_include_subdomains_amount.value=HSTS_include_subdomains.value">
+                                Weight: <output id="HSTS_include_subdomains_amount" name="HSTS_include_subdomains_amount" for="HSTS_include_subdomains">{{ profile_dict['includesubdomains'] }}</output>%<br><br>
+                                <label for="HSTS_preload" class="form-label">HSTS preload directive</label>
+                                <input name="HSTS_preload" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['preload'] }}" id="HSTS_preload" oninput="HSTS_preload_amount.value=HSTS_preload.value">
+                                Weight: <output id="HSTS_preload_amount" name="HSTS_preload_amount" for="HSTS_preload">{{ profile_dict['preload'] }}</output>%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingSix">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSix" aria-expanded="false" aria-controls="collapseSix">
+                            X-Content-Type-Options
+                        </button>
+                    </h2>
+                    <div id="collapseSix" class="accordion-collapse collapse" aria-labelledby="headingSix" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <div class="mb-3">
+                                <label for="XCTO_nosniff" class="form-label">X-content-type-options header value</label>
+                                <input name="XCTO_nosniff" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['nosniff'] }}" id="XCTO_nosniff" oninput="XCTO_nosniff_amount.value=XCTO_nosniff.value">
+                                Weight: <output id="XCTO_nosniff_amount" name="XCTO_nosniff_amount" for="XCTO_nosniff">{{ profile_dict['nosniff'] }}</output>%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingSeven">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSeven" aria-expanded="false" aria-controls="collapseSeven">
+                            X-Frame-Options
+                        </button>
+                    </h2>
+                    <div id="collapseSeven" class="accordion-collapse collapse" aria-labelledby="headingSeven" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <div class="mb-3">
+                                <label for="x_frame_options" class="form-label">X-frame-options header value</label>
+                                <input name="x_frame_options" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['set_secure'] }}" id="x_frame_options" oninput="x_frame_options_amount.value=x_frame_options.value">
+                                Weight: <output id="x_frame_options_amount" name="x_frame_options_amount" for="x_frame_options">{{ profile_dict['set_secure'] }}</output>%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingEight">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEight" aria-expanded="false" aria-controls="collapseEight">
+                            Set-Cookie
+                        </button>
+                    </h2>
+                    <div id="collapseEight" class="accordion-collapse collapse" aria-labelledby="headingEight" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <div class="mb-3">
+                                <label for="SC_httponly" class="form-label">Set-cookie httponly directive</label>
+                                <input name="SC_httponly" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['httponly'] }}" id="SC_httponly" oninput="SC_httponly_amount.value=SC_httponly.value">
+                                Weight: <output id="SC_httponly_amount" name="SC_httponly_amount" for="SC_httponly">{{ profile_dict['httponly'] }}</output>%<br><br>
+                                <label for="SC_samesite" class="form-label">Set-cookie samesite directive</label>
+                                <input name="SC_samesite" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['samesite'] }}" id="SC_samesite" oninput="SC_samesite_amount.value=SC_samesite.value">
+                                Weight: <output id="SC_samesite_amount" name="SC_samesite_amount" for="SC_samesite">{{ profile_dict['samesite'] }}</output>%<br><br>
+                                <label for="SC_secure" class="form-label">Set-cookie secure directive</label>
+                                <input name="SC_secure" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['secure'] }}" id="SC_secure" oninput="SC_secure_amount.value=SC_secure.value">
+                                Weight: <output id="SC_secure_amount" name="SC_secure_amount" for="SC_secure">{{ profile_dict['secure'] }}</output>%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingNine">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNine" aria-expanded="false" aria-controls="collapseNine">
+                            Referrer-Policy
+                        </button>
+                    </h2>
+                    <div id="collapseNine" class="accordion-collapse collapse" aria-labelledby="headingNine" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <div class="mb-3">
+                                <label for="refpolicy" class="form-label">Referrer-policy header value</label>
+                                <input name="refpolicy" type="range" class="form-range" min="0" max="100" step="1" value="{{ profile_dict['refpolicy'] }}" id="refpolicy" oninput="refpolicy_amount.value=refpolicy.value">
+                                Weight: <output id="refpolicy_amount" name="refpolicy_amount" for="refpolicy">{{ profile_dict['refpolicy'] }}</output>%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="input-group mb-3">
+                <span class="input-group-text">Save profile?:</span>
+                <div class="input-group-text">
+                    <input id="profilecheckbox" name="profilecheckbox" onchange="profileTextbox.disabled = !this.checked;" class="form-check-input mt-0" type="checkbox" value="" aria-label="Checkbox for following text input">
+                </div>
+                <input name="profiletextbox" required id="profileTextbox" type="text" class="form-control" placeholder="Name for profile" disabled aria-label="Text input with checkbox">
+              </div>
+            <input type="hidden" name="website_id" value="{{ website_id }}">
+            <button type="submit" class="btn btn-primary">Submit</button>
+          </form>
+    </div>
+    </main>
+  </body>
+</html>
